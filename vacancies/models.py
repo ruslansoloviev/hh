@@ -24,9 +24,9 @@ class Metro(models.Model):
 
 class Address(models.Model):
     id = models.IntegerField(primary_key=True)
-    city = models.CharField(max_length=20, null=True, verbose_name='Город')
+    city = models.CharField(max_length=50, null=True, verbose_name='Город')
     street = models.CharField(max_length=100, null=True, verbose_name='Улица')
-    building = models.CharField(max_length=10, null=True, verbose_name='Дом')
+    building = models.CharField(max_length=30, null=True, verbose_name='Дом')
     description = models.CharField(max_length=100, null=True, verbose_name='Комментарий')
     raw = models.CharField(max_length=100, null=True, verbose_name='Оригинал строки адреса')
     lat = models.DecimalField(max_digits=9, decimal_places=6, null=True)

@@ -2,8 +2,13 @@
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
+from vacancies.db_manage import DBManage
+
+import logging
 import requests
 import json
+
+log = logging.getLogger('django')
 
 
 class Command(BaseCommand):
@@ -18,33 +23,47 @@ class Command(BaseCommand):
         parser.add_argument('name', nargs='*', type=str, help="Search vacancy on hh by name")
 
     def handle(self, *args, **options):
+        log.info('Search vacancies: %s', options)
         self.search_vacancies(**options)
 
-    def search_vacancies(self, **options):
-        url = 'http://localhost:8000'
-#        url = 'http://api.hh.ru/vacancies'
+    def search_vacancies(self, page=0, **options):
+        url = 'http://127.0.0.1:8000'
+        url = 'http://api.hh.ru/vacancies'
 
         data = {
             'User-Agent': 'jobfinder',
-#            'Authorization': 'Bearer {}'.format(settings.ACCESS_TOKEN),
+            'Authorization': 'Bearer {}'.format(settings.ACCESS_TOKEN),
         }
 
         params = {
             'text': ' '.join(options.get('name', [''])),
             'area': 1,
             'search_field': 'name',
+            'per_page': 20,
+            'page': page,
         }
 
-        r = requests.post(url, params=params, data=data)
+        try:
+            r = requests.post(url, params=params, data=data)
+        except Exception as e:
+            log.error('request.post: %s', e)
+            return
 
-        print(options)
-        print(r.status_code, r.request.url)
+        log.log([logging.ERROR, logging.INFO][r.status_code == 200],
+                'status_code: %d; url: %s', r.status_code, r.request.url)
 
         try:
-            with open("response.json", "w") as f:
-                json.dump(r.json(), f)
+            DBManage(r.json())
         except Exception as e:
-            print('Error while saving json response:', e)
+            log.error('Not json (%s)', e)
+            return
+        else:
+            if page < int(r.json().get('pages', 0)) - 1:
+                self.search_vacancies(page=page + 1, **options)
+                return
+
+        with open("response.json", "w") as f:
+            json.dump(r.json(), f)
 
 # ?text=Python&search_field=name&area=1&salary=&currency_code=RUR
 # curl -k -H 'User-Agent: api-test-agent' 'https://api.hh.ru/vacancies?text=java&area=1&metro=6.8'

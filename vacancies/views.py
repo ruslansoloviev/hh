@@ -18,6 +18,17 @@ def index(request):
     return HttpResponse("Start page")
 
 
+def show_log(request):
+    filename = request.GET.get('filename', 'hh.log')
+    lines = request.GET.get('lines')
+    lines = int(lines) if lines else lines
+
+    with open(filename) as f:
+        data = f.readlines()
+
+    return HttpResponse(data[-lines:], content_type='text/plain; charset=utf8')
+
+
 def show_json(request):
     with open('response.json') as f:
         data = json.load(f)
@@ -30,6 +41,6 @@ def response(request):
     with open('response.json') as f:
         data = json.load(f)
 
-    DBManage(data)
+    dbm = DBManage(data)
 
-    return HttpResponse('OK')
+    return HttpResponse('New records: {}'.format(dbm.records_created))
